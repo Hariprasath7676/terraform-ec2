@@ -31,6 +31,7 @@ echo "Using EBS Disk: $DISK"
 
 if ! lsblk ${DISK}p1 >/dev/null 2>&1; then
   echo -e "n\np\n1\n\n\nw" | fdisk $DISK
+  partprobe $DISK
   sleep 5
 fi
 
