@@ -31,17 +31,18 @@ echo "Using EBS Disk: $DISK"
 
 if ! lsblk ${DISK}p1 >/dev/null 2>&1; then
   echo -e "n\np\n1\n\n\nw" | fdisk $DISK
+
   partprobe $DISK
-  sleep 5
+  udevadm settle
+
+  sleep 10
 fi
 
 #####################################
 # Format Disk
 #####################################
 
-if ! blkid ${DISK}p1 >/dev/null 2>&1; then
-  mkfs.ext4 ${DISK}p1
-fi
+mkfs.ext4 -F ${DISK}p1
 
 #####################################
 # Mount Redis Data
