@@ -45,3 +45,7 @@ variable "s3_bucket" {
 variable "s3_key_path" {
   type = string
 }
+
+variable "application_type" {
+  type = string
+}

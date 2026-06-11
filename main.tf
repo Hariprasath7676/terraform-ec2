@@ -35,6 +35,7 @@ resource "aws_security_group" "server" {
     Name = var.security_group_name
   }
 }
+
 #####################################
 # SSH Key Generation
 #####################################
@@ -86,6 +87,8 @@ resource "aws_instance" "server" {
   ]
 
   iam_instance_profile = var.iam_instance_profile
+
+  user_data = file("${path.module}/userdata/${var.application_type}.sh")
 
   associate_public_ip_address = false
 
