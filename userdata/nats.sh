@@ -120,12 +120,18 @@ systemctl enable docker
 systemctl start docker
 
 #####################################
-# Get Instance Private IP
+# Get Instance Private IP (IMDSv2)
 #####################################
 
-PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+TOKEN=$(curl -s -X PUT \
+"http://169.254.169.254/latest/api/token" \
+-H "X-aws-ec2-metadata-token-ttl-seconds: 21600")
 
-echo "Private IP: ${PRIVATE_IP}"
+PRIVATE_IP=$(curl -s \
+-H "X-aws-ec2-metadata-token: $TOKEN" \
+http://169.254.169.254/latest/meta-data/local-ipv4)
+
+echo "Detected Private IP: ${PRIVATE_IP}"
 
 #####################################
 # Create Directories
@@ -150,7 +156,7 @@ jetstream {
 
   max_memory_store: 1GB
 
-  max_file_store: 16GB
+  max_file_store: 4GB
 
 }
 EOF
@@ -182,7 +188,7 @@ services:
 
     command:
       - "-c"
-      - "/etc/nats/nats-server.conf"
+      - "/etc/nats-server.conf"
 EOF
 
 #####################################
