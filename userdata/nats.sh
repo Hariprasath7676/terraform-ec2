@@ -60,6 +60,29 @@ mount -a
 echo "Filesystem UUID: $UUID"
 
 #####################################
+# Wait for APT Lock
+#####################################
+
+echo "Waiting for apt lock..."
+
+while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
+    echo "APT is busy..."
+    sleep 5
+done
+
+while fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+    echo "APT lists lock..."
+    sleep 5
+done
+
+while fuser /var/cache/apt/archives/lock >/dev/null 2>&1; do
+    echo "APT archive lock..."
+    sleep 5
+done
+
+echo "APT lock released."
+
+#####################################
 # Install Docker
 #####################################
 
