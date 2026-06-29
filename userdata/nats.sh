@@ -146,9 +146,9 @@ mkdir -p /home/ubuntu/nats-dashboard
 #####################################
 
 cat > /etc/nats/nats-server.conf <<EOF
-listen: ${PRIVATE_IP}:4222
+listen: 0.0.0.0:4222
 
-http: ${PRIVATE_IP}:8222
+http: 0.0.0.0:8222
 
 jetstream {
 
