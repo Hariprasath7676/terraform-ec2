@@ -90,13 +90,12 @@ resource "aws_instance" "server" {
 
 #  user_data = file("${path.module}/userdata/${var.application_type}.sh")
 user_data = templatefile(
-  "${path.module}/userdata/${var.application_type}.sh",
-  {
-    app_username = var.app_username
-    app_password = var.app_password
-    app_database = var.app_database
-  }
-)
+"${path.module}/userdata/${var.application_type}.sh",
+{
+  app_username = var.app_username
+  app_password = var.app_password
+  app_database = var.app_database
+})
   associate_public_ip_address = false
 
   root_block_device {

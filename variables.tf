@@ -53,18 +53,18 @@ variable "application_type" {
 variable "app_username" {
   type        = string
   default     = ""
-  description = "Application username"
+  description = "Application Username"
 }
 
 variable "app_password" {
   type        = string
   sensitive   = true
   default     = ""
-  description = "Application password"
+  description = "Application Password"
 }
 
 variable "app_database" {
   type        = string
   default     = ""
-  description = "Database name"
+  description = "Application Database"
 }
