@@ -174,9 +174,9 @@ services:
     restart: always
 
     environment:
-      POSTGRES_USER: ${APP_USERNAME}
-      POSTGRES_PASSWORD: ${APP_PASSWORD}
-      POSTGRES_DB: ${APP_DATABASE}
+     POSTGRES_USER: temporal_admin
+     POSTGRES_PASSWORD: newpassword
+     POSTGRES_DB: temporal_metadata
       POSTGRES_INITDB_ARGS: --auth-local=scram-sha-256 --auth-host=scram-sha-256
 
     volumes:
