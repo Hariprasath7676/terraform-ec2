@@ -49,3 +49,22 @@ variable "s3_key_path" {
 variable "application_type" {
   type = string
 }
+
+variable "app_username" {
+  type        = string
+  default     = ""
+  description = "Application username"
+}
+
+variable "app_password" {
+  type        = string
+  sensitive   = true
+  default     = ""
+  description = "Application password"
+}
+
+variable "app_database" {
+  type        = string
+  default     = ""
+  description = "Database name"
+}
