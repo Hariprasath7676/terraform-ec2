@@ -51,20 +51,17 @@ variable "application_type" {
 }
 
 variable "app_username" {
-  type        = string
-  default     = ""
-  description = "Application Username"
+  type = string
+  default = ""
 }
 
 variable "app_password" {
-  type        = string
-  sensitive   = true
-  default     = ""
-  description = "Application Password"
+  type = string
+  sensitive = true
+  default = ""
 }
 
 variable "app_database" {
-  type        = string
-  default     = ""
-  description = "Application Database"
+  type = string
+  default = ""
 }

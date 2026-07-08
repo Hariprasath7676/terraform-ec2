@@ -88,14 +88,15 @@ resource "aws_instance" "server" {
 
   iam_instance_profile = var.iam_instance_profile
 
-#  user_data = file("${path.module}/userdata/${var.application_type}.sh")
+ # user_data = file("${path.module}/userdata/${var.application_type}.sh")
 user_data = templatefile(
-"${path.module}/userdata/${var.application_type}.sh",
-{
-  app_username = var.app_username
-  app_password = var.app_password
-  app_database = var.app_database
-})
+  "${path.module}/userdata/postgres.sh",
+  {
+    app_username = var.app_username
+    app_password = var.app_password
+    app_database = var.app_database
+  }
+)
   associate_public_ip_address = false
 
   root_block_device {
