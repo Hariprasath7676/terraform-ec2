@@ -83,6 +83,13 @@ mkdir -p /postgres_data/data
 
 mkdir -p /postgres_data/logs
 
+# PostgreSQL container runs as UID:GID 999:999
+chown -R 999:999 /postgres_data/data
+chown -R 999:999 /postgres_data/logs
+
+chmod 700 /postgres_data/data
+chmod 755 /postgres_data/logs
+
 mkdir -p /opt/postgres
 
 #####################################
