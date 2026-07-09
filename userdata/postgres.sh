@@ -189,7 +189,7 @@ services:
      POSTGRES_INITDB_ARGS: --auth-local=scram-sha-256 --auth-host=scram-sha-256
 
     volumes:
-      - /postgres_data/data:/var/lib/postgresql/data
+      - /postgres_data/data:/var/lib/postgresql
       - /postgres_data/logs:/var/log/postgresql
 
     ports:
