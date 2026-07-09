@@ -149,6 +149,13 @@ docker-compose-plugin
 systemctl enable docker
 
 systemctl start docker
+#####################################
+# Install AWS CLI and jq
+#####################################
+
+apt-get update
+
+apt-get install -y awscli jq
 
 #####################################
 # Generate Dockerfile
