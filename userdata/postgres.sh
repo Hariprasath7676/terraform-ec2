@@ -154,9 +154,17 @@ systemctl start docker
 #####################################
 
 apt-get update
+apt-get install -y unzip curl jq
 
-apt-get install -y awscli jq
+cd /tmp
 
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+
+unzip -q awscliv2.zip
+
+./aws/install
+
+aws --version
 #####################################
 # Generate Dockerfile
 #####################################
