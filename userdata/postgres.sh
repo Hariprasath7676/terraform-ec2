@@ -179,10 +179,24 @@ CMD ["postgres","-c","listen_addresses=*","-c","logging_collector=on","-c","log_
 EOF
 
 #####################################
+# Read PostgreSQL Secret
+#####################################
+
+SECRET=$(aws secretsmanager get-secret-value \
+  --secret-id terraform-postgres \
+  --query SecretString \
+  --output text)
+
+POSTGRES_USER=$(echo "$SECRET" | jq -r '.username')
+POSTGRES_PASSWORD=$(echo "$SECRET" | jq -r '.password')
+POSTGRES_DB=$(echo "$SECRET" | jq -r '.database')
+
+
+#####################################
 # Generate docker-compose.yml
 #####################################
 
-cat > /opt/postgres/docker-compose.yml << EOF
+cat > /opt/postgres/docker-compose.yml <<EOF
 services:
   postgres-service:
     build: .
@@ -190,10 +204,10 @@ services:
     restart: always
 
     environment:
-     POSTGRES_USER: temporal_admin
-     POSTGRES_PASSWORD: newpassword
-     POSTGRES_DB: temporal_metadata
-     POSTGRES_INITDB_ARGS: --auth-local=scram-sha-256 --auth-host=scram-sha-256
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_INITDB_ARGS: --auth-local=scram-sha-256 --auth-host=scram-sha-256
 
     volumes:
       - /postgres_data/data:/var/lib/postgresql
@@ -202,7 +216,6 @@ services:
     ports:
       - "5432:5432"
 EOF
-
 #####################################
 # Build PostgreSQL Image
 #####################################
