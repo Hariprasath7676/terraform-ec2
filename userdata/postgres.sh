@@ -148,18 +148,27 @@ systemctl start docker
 #####################################
 
 cat > /opt/postgres/Dockerfile << 'EOF'
+#FROM postgres:18
+
+#RUN sed -i 's/local   all             all                                     trust/local   all             all                                     scram-sha-256/' /usr/share/postgresql/18/pg_hba.conf.sample
+
+#ENTRYPOINT ["docker-entrypoint.sh"]
+
+#CMD ["postgres",
+     "-c","listen_addresses=*",
+     "-c","logging_collector=on",
+     "-c","log_directory=/var/log/postgresql",
+     "-c","log_filename=postgresql.log",
+     "-c","password_encryption=scram-sha-256"]
 FROM postgres:18
 
 RUN sed -i 's/local   all             all                                     trust/local   all             all                                     scram-sha-256/' /usr/share/postgresql/18/pg_hba.conf.sample
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-CMD ["postgres",
-     "-c","listen_addresses=*",
-     "-c","logging_collector=on",
-     "-c","log_directory=/var/log/postgresql",
-     "-c","log_filename=postgresql.log",
-     "-c","password_encryption=scram-sha-256"]
+CMD ["postgres","-c","listen_addresses=*","-c","logging_collector=on","-c","log_directory=/var/log/postgresql","-c","log_filename=postgresql.log","-c","password_encryption=scram-sha-256"]
+
+
 EOF
 
 #####################################
