@@ -4,113 +4,119 @@ set -e
 
 exec > /var/log/userdata.log 2>&1
 
-echo "===== MongoDB Installation Started ====="
+echo "Starting MongoDB installation..."
 
 sleep 60
 
-########################################
+#####################################
 # Detect Additional EBS Volume
-########################################
+#####################################
 
 ROOT_DISK=$(findmnt -n -o SOURCE / | sed 's/p[0-9]*$//')
 
 DISK=$(lsblk -dpno NAME | grep nvme | grep -v "$ROOT_DISK" | head -1)
 
-while [ -z "$DISK" ]
-do
-    echo "Waiting for EBS Volume..."
+while [ -z "$DISK" ]; do
+
+    echo "Waiting for additional EBS volume..."
+
     sleep 10
+
     DISK=$(lsblk -dpno NAME | grep nvme | grep -v "$ROOT_DISK" | head -1)
+
 done
 
-echo "Using Disk : $DISK"
+echo "Using EBS Disk: $DISK"
 
-########################################
-# Partition Disk
-########################################
+#####################################
+# Partition
+#####################################
 
-if ! lsblk ${DISK}p1 >/dev/null 2>&1
-then
+if ! lsblk ${DISK}p1 >/dev/null 2>&1; then
+
     echo -e "n\np\n1\n\n\nw" | fdisk $DISK
+
     partprobe $DISK
+
     udevadm settle
-    sleep 5
+
+    sleep 10
+
 fi
 
-########################################
+#####################################
 # Format
-########################################
+#####################################
 
 if ! blkid ${DISK}p1 >/dev/null 2>&1; then
+
     echo "Formatting ${DISK}p1..."
+
     mkfs.ext4 -F ${DISK}p1
+
 else
+
     echo "Filesystem already exists. Skipping format."
+
 fi
 
-########################################
+#####################################
 # Mount
-########################################
+#####################################
 
 mkdir -p /mongodb-data
 
 UUID=$(blkid -s UUID -o value ${DISK}p1)
+
+echo "Filesystem UUID: $UUID"
 
 grep -q "$UUID" /etc/fstab || \
 echo "UUID=${UUID} /mongodb-data ext4 defaults,nofail 0 2" >> /etc/fstab
 
 mount -a
 
-########################################
+#####################################
 # Directories
-########################################
+#####################################
 
 mkdir -p /mongodb-data/logs
 
 mkdir -p /opt/mongodb
 
-########################################
+#####################################
 # Permissions
-########################################
+#####################################
 
 chown -R 999:999 /mongodb-data
 
 chmod -R 755 /mongodb-data
 
-########################################
-# Wait for Apt Lock
-########################################
+#####################################
+# Install Docker
+#####################################
 
 while fuser /var/lib/dpkg/lock >/dev/null 2>&1 || \
       fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1
 do
-    echo "Waiting for apt lock..."
-    sleep 5
-done
 
-########################################
-# Install Packages
-########################################
+    echo "Waiting for apt lock..."
+
+    sleep 5
+
+done
 
 apt-get update
 
 apt-get install -y \
-curl \
-unzip \
-jq \
-awscli \
 ca-certificates \
+curl \
 gnupg \
 lsb-release
 
-########################################
-# Install Docker
-########################################
-
 install -m 0755 -d /etc/apt/keyrings
 
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-| gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 
 chmod a+r /etc/apt/keyrings/docker.gpg
 
@@ -121,6 +127,16 @@ $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
 | tee /etc/apt/sources.list.d/docker.list >/dev/null
 
 apt-get update
+
+while fuser /var/lib/dpkg/lock >/dev/null 2>&1 || \
+      fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1
+do
+
+    echo "Waiting for apt lock..."
+
+    sleep 5
+
+done
 
 apt-get install -y \
 docker-ce \
@@ -133,42 +149,65 @@ systemctl enable docker
 
 systemctl start docker
 
-########################################
-# Verify
-########################################
+#####################################
+# Install AWS CLI and jq
+#####################################
 
-docker --version
+apt-get update
 
-docker compose version
+apt-get install -y unzip curl jq
+
+cd /tmp
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+
+unzip -q awscliv2.zip
+
+./aws/install
 
 aws --version
 
 jq --version
 
-########################################
-# Read Secret
-########################################
+docker --version
+
+docker compose version
+
+#####################################
+# Read MongoDB Secret
+#####################################
 
 SECRET=$(aws secretsmanager get-secret-value \
-    --secret-id terraform-mongodb \
-    --query SecretString \
-    --output text)
-if [ -z "$SECRET" ]; then
-    echo "ERROR: Failed to retrieve secret."
+  --secret-id terraform-mongodb \
+  --query SecretString \
+  --output text)
+
+if [ -z "$SECRET" ] || [ "$SECRET" = "null" ]; then
+
+    echo "ERROR: Failed to retrieve MongoDB secret."
+
     exit 1
+
 fi
 
 MONGO_USER=$(echo "$SECRET" | jq -r '.username')
 
 MONGO_PASSWORD=$(echo "$SECRET" | jq -r '.password')
 
+if [ -z "$MONGO_USER" ] || [ "$MONGO_USER" = "null" ] || \
+   [ -z "$MONGO_PASSWORD" ] || [ "$MONGO_PASSWORD" = "null" ]; then
+
+    echo "ERROR: Invalid MongoDB credentials."
+
+    exit 1
+
+fi
+
 echo "MongoDB credentials retrieved successfully."
 
-echo "Secret Successfully Retrieved"
-
-########################################
-# Create Dockerfile
-########################################
+#####################################
+# Generate Dockerfile
+#####################################
 
 cat > /opt/mongodb/Dockerfile <<'EOF'
 FROM mongo:8.0
@@ -215,16 +254,22 @@ EXPOSE 27017
 CMD ["mongod","--config","/etc/mongod.conf"]
 EOF
 
-########################################
-# Create Docker Compose
-########################################
+echo ""
+echo "==========================================="
+echo "Dockerfile"
+echo "==========================================="
+
+cat /opt/mongodb/Dockerfile
+
+#####################################
+# Generate docker-compose.yml
+#####################################
 
 cat > /opt/mongodb/docker-compose.yml <<EOF
 services:
   mongodb:
     build: .
     container_name: mongodb8
-
     restart: unless-stopped
 
     environment:
@@ -244,35 +289,34 @@ services:
         hard: 1048576
 EOF
 
-echo "===== Dockerfile ====="
-
-cat /opt/mongodb/Dockerfile
-
-echo "===== docker-compose.yml ====="
+echo ""
+echo "==========================================="
+echo "Docker Compose"
+echo "==========================================="
 
 cat /opt/mongodb/docker-compose.yml
 
-########################################
+#####################################
 # Build MongoDB Image
-########################################
+#####################################
 
 cd /opt/mongodb
 
-echo "Building MongoDB Image..."
+echo "Building MongoDB image..."
 
 docker compose build
 
-########################################
+#####################################
 # Start MongoDB
-########################################
+#####################################
 
 echo "Starting MongoDB..."
 
 docker compose up -d
 
-########################################
-# Wait for MongoDB
-########################################
+#####################################
+# Wait for MongoDB Startup
+#####################################
 
 echo "Waiting for MongoDB to become ready..."
 
@@ -283,40 +327,70 @@ done
 
 echo "MongoDB is ready."
 
-########################################
-# Verify Container
-########################################
-
-docker ps -a
-
-docker logs mongodb8 --tail 50
-
-########################################
+#####################################
 # Verify Authentication
-########################################
+#####################################
 
 docker exec mongodb8 mongosh \
     --username "$MONGO_USER" \
     --password "$MONGO_PASSWORD" \
     --authenticationDatabase admin \
     --eval "db.runCommand({connectionStatus:1})"
-    
-    ########################################
-# Verify Storage
-########################################
+  
+#####################################
+# Verification
+#####################################
 
-echo "Mounted Volume"
+echo ""
+echo "==========================================="
+echo "Docker Containers"
+echo "==========================================="
 
-df -h | grep mongodb-data
+docker ps -a
 
-echo "MongoDB Files"
+echo ""
+echo "==========================================="
+echo "Mounted Filesystem"
+echo "==========================================="
+
+df -h | grep mongodb
+
+echo ""
+echo "==========================================="
+echo "Mount"
+echo "==========================================="
+
+mount | grep mongodb
+
+echo ""
+echo "==========================================="
+echo "fstab"
+echo "==========================================="
+
+cat /etc/fstab
+
+echo ""
+echo "==========================================="
+echo "Container Logs"
+echo "==========================================="
+
+docker logs mongodb8 --tail 50
+
+echo ""
+echo "==========================================="
+echo "MongoDB Data Directory"
+echo "==========================================="
 
 ls -lah /mongodb-data
 
-########################################
-# Finished
-########################################
+echo ""
+echo "==========================================="
+echo "MongoDB Log Directory"
+echo "==========================================="
 
-echo "====================================="
+ls -lah /mongodb-data/logs
+
+echo ""
+echo "==========================================="
 echo "MongoDB Installation Completed"
-echo "====================================="
+echo "==========================================="
