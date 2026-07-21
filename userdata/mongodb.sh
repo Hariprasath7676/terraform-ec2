@@ -48,21 +48,12 @@ fi
 # Format
 #####################################
 
-if ! blkid ${DISK}p1 >/dev/null 2>&1; then
-
-    echo "Formatting ${DISK}p1..."
-
-    mkfs.ext4 -F ${DISK}p1
-
-else
-
-    echo "Filesystem already exists. Skipping format."
-
-fi
+mkfs.ext4 -F ${DISK}p1
 
 #####################################
 # Mount
 #####################################
+
 
 mkdir -p /mongodb-data
 
