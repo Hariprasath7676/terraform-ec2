@@ -318,6 +318,12 @@ done
 
 echo "MongoDB is ready."
 
+docker exec mongodb8 mongosh admin \
+  -u "$MONGO_USER" \
+  -p "$MONGO_PASSWORD" \
+  --authenticationDatabase admin \
+  --eval "if (!db.getUser('root')) { db.createUser({user:'root',pwd:'$MONGO_PASSWORD',roles:[{role:'root',db:'admin'}]}); print('Root user created'); } else { print('Root user already exists'); }"
+
 #####################################
 # Verify Authentication
 #####################################
