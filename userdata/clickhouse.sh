@@ -157,7 +157,7 @@ cat > /root/clickhouse-configurations/users.xml <<EOF
     <users>
 
         <default>
-            <password>${DEFAULT_PASSWORD}</password>
+            <password>DEFAULTPASSWORD</password>
             <networks>
                 <ip>::/0</ip>
             </networks>
@@ -168,7 +168,7 @@ cat > /root/clickhouse-configurations/users.xml <<EOF
         </default>
 
         <admin>
-            <password>${ADMIN_PASSWORD}</password>
+            <password>ADMIN_PASSWORD</password>
             <networks>
                 <ip>::/0</ip>
             </networks>
@@ -2164,4 +2164,5 @@ until docker exec clickhouse-server clickhouse-client --query "SELECT 1" >/dev/n
 do
     sleep 2
 done
+
 
