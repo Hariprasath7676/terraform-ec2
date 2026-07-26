@@ -147,7 +147,7 @@ services:
       - /root/clickhouse-configurations/users.d/default-user.xml:/etc/clickhouse-server/users.d/default-user.xml
 EOF
 
-cat > /root/clickhouse-configurations/users.xml <<EOF
+cat > /root/clickhouse-configurations/users.xml <<'EOF'
 <clickhouse>
 
     <profiles>
